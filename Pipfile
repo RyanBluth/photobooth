@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 kivy = "*"
 opencv-python = "*"
+gphoto2 = "*"
 
 [dev-packages]
 
