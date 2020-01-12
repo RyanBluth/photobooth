@@ -8,32 +8,34 @@ from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 
-from slr import Slr
+from cam import Cam
+import printer
 
 
 class LiveView(Widget):
-    slr: Slr
+    cam: Cam
     image_view: Image
 
     def __init__(self, slr, **kwargs):
         super().__init__(**kwargs)
-        self.slr = slr
+        self.cam = slr
         self.image_view = Image(size=self.size, pos=self.pos)
         self.add_widget(self.image_view)
-        Clock.schedule_interval(self.update, 1.0 / 20.0)
+        Clock.schedule_interval(self.update, 1.0 / 24.0)
 
     def update(self, dt):
-        img_data = self.slr.capture_preview_image()
-        img = CoreImage(BytesIO(img_data), ext='jpg')
-        self.image_view.texture = img.texture
+        if not self.cam.capturing_image:
+            img_data = self.cam.capture_preview_image()
+            img = CoreImage(BytesIO(img_data), ext='jpg')
+            self.image_view.texture = img.texture
 
 
 class MainApp(App):
-    slr: Slr
+    slr: Cam
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.slr = Slr()
+        self.slr = Cam()
 
     def build(self):
         layout = FloatLayout(size=(720, 640))
@@ -48,3 +50,6 @@ class MainApp(App):
 
 if __name__ == "__main__":
     MainApp().run()
+    # printer.print_printers()
+    # p = printer.Printer("MX920LAN")
+    # p.print_attributes()
