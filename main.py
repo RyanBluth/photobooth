@@ -3,13 +3,46 @@ from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.image import Image as CoreImage
 from kivy.uix.button import Button
-from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
+from kivy import Config as KivyConfig
+from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
 
-from cam import Cam
+from cam import Cam, CamInitializationException
 import printer
+
+
+class CaptureScreen(Screen):
+    NAME = "capture"
+    cam: Cam
+
+    def __init__(self):
+        super().__init__(name=CaptureScreen.NAME)
+        self.cam = Cam()
+        self.size = (1024, 600)
+        photo_button = Button(text="Take Photo", pos=(0, 0), size_hint=(1, 0.1), on_press=self.capture_photo_pressed)
+        self.add_widget(photo_button)
+        self.add_widget(LiveView(self.cam, size=(720, 480), pos=(152, 80)))
+
+    def capture_photo_pressed(self, instance):
+        try:
+            self.cam.capture_image()
+        except:
+            # TODO
+            pass
+
+
+class IdleScreen(Screen):
+    NAME = "idle"
+
+    def __init__(self):
+        super().__init__(name=IdleScreen.NAME)
+        photo_button = Button(text="Take Photo", pos=(0, 0), size_hint=(1, 0.1), on_press=self.capture_photo_pressed)
+        self.add_widget(photo_button)
+
+    def capture_photo_pressed(self, instance):
+        self.manager.current = CaptureScreen.NAME
 
 
 class LiveView(Widget):
@@ -21,34 +54,42 @@ class LiveView(Widget):
         self.cam = slr
         self.image_view = Image(size=self.size, pos=self.pos)
         self.add_widget(self.image_view)
+        self.message_label = Label()
+        self.message_label.opacity = 0
+        self.message_label.center = self.image_view.center
+        self.message_label.color = (0, 0, 0, 1)
+        self.add_widget(self.message_label)
         Clock.schedule_interval(self.update, 1.0 / 24.0)
 
     def update(self, dt):
         if not self.cam.capturing_image:
-            img_data = self.cam.capture_preview_image()
-            img = CoreImage(BytesIO(img_data), ext='jpg')
-            self.image_view.texture = img.texture
+            try:
+                img_data = self.cam.capture_preview_image()
+                img = CoreImage(BytesIO(img_data), ext='jpg')
+                self.image_view.texture = img.texture
+                self.message_label.opacity = 0
+            except CamInitializationException as ex:
+                self.message_label.opacity = 1
+                self.message_label.text = "Failed to initialize camera"
 
 
 class MainApp(App):
-    slr: Cam
+    screen_manager: ScreenManager
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.slr = Cam()
+        self.screen_manager = ScreenManager(transition=FadeTransition())
+        self.screen_manager.add_widget(IdleScreen())
+        self.screen_manager.add_widget(CaptureScreen())
+        self.screen_manager.current = IdleScreen.NAME
 
     def build(self):
-        layout = FloatLayout(size=(720, 640))
-        photo_button = Button(text="Take Photo", pos=(0, 0), size_hint=(1, 0.1), on_press=self.capture_photo_pressed)
-        layout.add_widget(photo_button)
-        layout.add_widget(LiveView(self.slr, size=(720, 480), pos=(0, 160)))
-        return layout
-
-    def capture_photo_pressed(self, instance):
-        self.slr.capture_image()
+        return self.screen_manager
 
 
 if __name__ == "__main__":
+    KivyConfig.set('graphics', 'width', '1024')
+    KivyConfig.set('graphics', 'height', '600')
     MainApp().run()
     # printer.print_printers()
     # p = printer.Printer("MX920LAN")
