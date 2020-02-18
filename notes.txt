@@ -2,3 +2,8 @@ Streaming live view to video device
 	- https://askubuntu.com/questions/856460/using-a-digital-camera-canon-as-webcam
 	- Try multiple video devices video1 didn't work on laptop
 	- Should be able to use https://github.com/loyd/rscam to capture video frames
+
+Printing
+    - Error code 3 = No paper
+    - Error code 7 = No Ink
+    - If an error occurs then we need to tell cups to resume the printer before we can Printing

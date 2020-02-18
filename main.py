@@ -88,9 +88,13 @@ class MainApp(App):
 
 
 if __name__ == "__main__":
-    KivyConfig.set('graphics', 'width', '1024')
-    KivyConfig.set('graphics', 'height', '600')
-    MainApp().run()
-    # printer.print_printers()
-    # p = printer.Printer("MX920LAN")
-    # p.print_attributes()
+    # KivyConfig.set('graphics', 'width', '1024')
+    # KivyConfig.set('graphics', 'height', '600')
+    # MainApp().run()
+    printer.print_printers()
+    p = printer.Printer("Canon_MX920_series")
+    p.print_attributes()
+    print(p.get_printer_state())
+    p.cancel_all_jobs()
+    print(p.get_printer_state())
+    p.print_file("/home/ryan/Desktop/test.txt")
