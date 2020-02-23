@@ -53,7 +53,8 @@ class Cam:
                 self.camera.init(self.context)
             except Exception as ex:
                 self.camera = None
-                raise CamInitializationException("Failed to initialize camera", ex)
+                raise CamInitializationException(
+                    "Failed to initialize camera", ex)
 
     def lower_mirror(self):
         self.init_camera()

@@ -10,7 +10,7 @@ from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 from kivy import Config as KivyConfig
 from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
-
+from time import time
 from cam import Cam, CamInitializationException
 import printer
 
@@ -22,21 +22,45 @@ class CaptureScreen(Screen):
     NAME = "capture"
     cam: Cam
 
+    countdown_label: Label
+    countdown_second = 10
+    time_since_last_countdown = 0
+    ran_first_update = False
+
     def __init__(self):
         super().__init__(name=CaptureScreen.NAME)
         self.cam = Cam()
         self.size = (1024, 600)
-        photo_button = Button(text="Take Photo", pos=(0, 0), size_hint=(
-            1, 0.1), on_press=self.capture_photo_pressed)
-        self.add_widget(photo_button)
-        self.add_widget(LiveView(self.cam, size=(720, 480), size_hint=(None, None), pos=(152, 80)))
+        self.add_widget(LiveView(self.cam, size=(1024, 683),
+                                 size_hint=(None, None), pos=(0, -41)))
+        self.countdown_label = Label(text="10", font_size='180sp', outline_width=6, outline_color=(
+            0, 0, 0, 1), color=(1, 1, 1, 1), pos_hint={'center_x': .5, 'center_y': .5})
+        self.add_widget(self.countdown_label)
 
-    def capture_photo_pressed(self, instance):
+    def capture_photo(self):
         try:
             self.cam.capture_image()
         except:
             # TODO
             pass
+
+    def on_enter(self):
+        Clock.schedule_interval(self.update, 1.0 / 24.0)
+
+    def update(self, dt):
+        if self.ran_first_update:
+            self.time_since_last_countdown += dt
+        if self.time_since_last_countdown >= 1.0 and self.countdown_second > 0:
+            self.time_since_last_countdown = 0
+            self.countdown_second -= 1
+            self.countdown_label.text = str(self.countdown_second)
+            if self.countdown_second == 0:
+                self.capture_photo()
+        if self.cam.camera is not None and self.countdown_second > 0:
+            self.countdown_label.opacity = 1
+        else:
+            self.countdown_label.opacity = 0
+        self.ran_first_update = True
 
 
 class IdleScreen(Screen):
@@ -89,7 +113,7 @@ class MainApp(App):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.screen_manager = ScreenManager(transition=FadeTransition())
+        self.screen_manager = ScreenManager()
         self.screen_manager.add_widget(IdleScreen())
         self.screen_manager.add_widget(CaptureScreen())
         self.screen_manager.current = IdleScreen.NAME
@@ -101,6 +125,7 @@ class MainApp(App):
 if __name__ == "__main__":
     KivyConfig.set('graphics', 'width', '1024')
     KivyConfig.set('graphics', 'height', '600')
+    Window.size = (1024, 600)
     MainApp().run()
     # printer.print_printers()
     # p = printer.Printer("Canon_MX920_series")
