@@ -2,6 +2,8 @@ from io import BytesIO
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.image import Image as CoreImage
+from kivy.core.window import Window
+from kivy.graphics.vertex_instructions import Rectangle
 from kivy.uix.button import Button
 from kivy.uix.image import Image
 from kivy.uix.label import Label
@@ -12,6 +14,9 @@ from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
 from cam import Cam, CamInitializationException
 import printer
 
+WIDTH = 1024
+HEIGHT = 600
+
 
 class CaptureScreen(Screen):
     NAME = "capture"
@@ -21,9 +26,10 @@ class CaptureScreen(Screen):
         super().__init__(name=CaptureScreen.NAME)
         self.cam = Cam()
         self.size = (1024, 600)
-        photo_button = Button(text="Take Photo", pos=(0, 0), size_hint=(1, 0.1), on_press=self.capture_photo_pressed)
+        photo_button = Button(text="Take Photo", pos=(0, 0), size_hint=(
+            1, 0.1), on_press=self.capture_photo_pressed)
         self.add_widget(photo_button)
-        self.add_widget(LiveView(self.cam, size=(720, 480), pos=(152, 80)))
+        self.add_widget(LiveView(self.cam, size=(720, 480), size_hint=(None, None), pos=(152, 80)))
 
     def capture_photo_pressed(self, instance):
         try:
@@ -38,7 +44,12 @@ class IdleScreen(Screen):
 
     def __init__(self):
         super().__init__(name=IdleScreen.NAME)
-        photo_button = Button(text="Take Photo", pos=(0, 0), size_hint=(1, 0.1), on_press=self.capture_photo_pressed)
+        Window.clearcolor = (0.1, 0.1, 0.1, 1)
+        photo_button = Button(background_normal="./assets/image/take_photo_button_up.png",
+                              background_down="./assets/image/take_photo_button_down.png",
+                              size_hint=(None, None), size=(621, 137), pos_hint={'center_x': .5, 'center_y': .5},
+                              on_press=self.capture_photo_pressed
+                              )
         self.add_widget(photo_button)
 
     def capture_photo_pressed(self, instance):
@@ -88,13 +99,13 @@ class MainApp(App):
 
 
 if __name__ == "__main__":
-    # KivyConfig.set('graphics', 'width', '1024')
-    # KivyConfig.set('graphics', 'height', '600')
-    # MainApp().run()
-    printer.print_printers()
-    p = printer.Printer("Canon_MX920_series")
-    p.print_attributes()
-    print(p.get_printer_state())
-    p.cancel_all_jobs()
-    print(p.get_printer_state())
-    p.print_file("/home/ryan/Desktop/test.txt")
+    KivyConfig.set('graphics', 'width', '1024')
+    KivyConfig.set('graphics', 'height', '600')
+    MainApp().run()
+    # printer.print_printers()
+    # p = printer.Printer("Canon_MX920_series")
+    # p.print_attributes()
+    # print(p.get_printer_state())
+    # p.cancel_all_jobs()
+    # print(p.get_printer_state())
+    # p.print_file("/home/ryan/Desktop/test.txt")
