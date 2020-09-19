@@ -18,14 +18,72 @@ WIDTH = 1024
 HEIGHT = 600
 
 
+class PreviewScreen(Screen):
+    NAME = "preview"
+    file_name: str
+
+    def __init__(self, file_name):
+        super().__init__(name=PreviewScreen.NAME)
+        self.file_name = file_name
+        self.size = (1024, 600)
+        image = Image(source=self.file_name, keep_ratio=True,
+                      size_hint_y=0.73, pos_hint={'top': 1})
+        self.add_widget(image)
+
+        redo_button = Button(background_normal="./assets/image/redo_button_up.png",
+                             background_down="./assets/image/redo_button_down.png",
+                             size_hint=(None, None), size=(410, 137), pos=(68, 10),
+                             on_press=self.redo_button_pressed
+                             )
+        self.add_widget(redo_button)
+
+        print_button = Button(background_normal="./assets/image/print_button_up.png",
+                              background_down="./assets/image/print_button_down.png",
+                              size_hint=(None, None), size=(410, 137), pos=(546, 10),
+                              on_press=self.print_button_pressed
+                              )
+        self.add_widget(print_button)
+
+    def redo_button_pressed(self, instance):
+        self.manager.current = CaptureScreen.NAME
+        self.manager.remove_widget(self)
+
+    def print_button_pressed(self, instance):
+        pass
+
+
+class CaptureErrorScreen(Screen):
+    NAME = "capture_error"
+
+    def __init__(self):
+        super().__init__(name=CaptureErrorScreen.NAME)
+        self.size = (1024, 600)
+
+        error_label = Label(text="Oops, a picture couldn't be taken.\nMake sure you aren't standing too close to the camera.",
+                            font_size='38', pos=(0, 167), size=(1024, 300), halign="center")
+        self.add_widget(error_label)                            
+
+        redo_button = Button(background_normal="./assets/image/redo_button_up.png",
+                             background_down="./assets/image/redo_button_down.png",
+                             size_hint=(None, None), size=(410, 137), pos=(307, 120),
+                             on_press=self.redo_button_pressed
+                             )
+        self.add_widget(redo_button)
+
+    def redo_button_pressed(self, instance):
+        self.manager.current = CaptureScreen.NAME
+        self.manager.remove_widget(self)
+
+
 class CaptureScreen(Screen):
     NAME = "capture"
     cam: Cam
 
     countdown_label: Label
-    countdown_second = 10
-    time_since_last_countdown = 0
-    ran_first_update = False
+    countdown_second: int
+    time_since_last_countdown: int
+    ran_first_update: bool = False
+    clock_scheduled: bool = False
 
     def __init__(self):
         super().__init__(name=CaptureScreen.NAME)
@@ -39,13 +97,23 @@ class CaptureScreen(Screen):
 
     def capture_photo(self):
         try:
-            self.cam.capture_image()
+            file_name = self.cam.capture_image()
+            self.manager.add_widget(PreviewScreen(file_name))
+            self.manager.current = PreviewScreen.NAME
         except:
-            # TODO
-            pass
+            self.manager.add_widget(CaptureErrorScreen())
+            self.manager.current = CaptureErrorScreen.NAME
+            Window.clearcolor = (0.1, 0.1, 0.1, 1)
+            
 
     def on_enter(self):
-        Clock.schedule_interval(self.update, 1.0 / 24.0)
+        if not self.clock_scheduled:
+            Clock.schedule_interval(self.update, 1.0 / 24.0)
+            self.clock_scheduled = True
+        self.countdown_label.text = "10"
+        self.ran_first_update = False
+        self.countdown_second = 10
+        self.time_since_last_countdown = 0
 
     def update(self, dt):
         if self.ran_first_update:
@@ -83,6 +151,7 @@ class IdleScreen(Screen):
 class LiveView(Widget):
     cam: Cam
     image_view: Image
+    failed_connection_time = 0
 
     def __init__(self, slr, **kwargs):
         super().__init__(**kwargs)
@@ -97,7 +166,7 @@ class LiveView(Widget):
         Clock.schedule_interval(self.update, 1.0 / 24.0)
 
     def update(self, dt):
-        if not self.cam.capturing_image:
+        if not self.cam.capturing_image and time() - self.failed_connection_time > 2:
             try:
                 img_data = self.cam.capture_preview_image()
                 img = CoreImage(BytesIO(img_data), ext='jpg')
@@ -106,6 +175,7 @@ class LiveView(Widget):
             except CamInitializationException as ex:
                 self.message_label.opacity = 1
                 self.message_label.text = "Failed to initialize camera"
+                self.failed_connection_time = time()
 
 
 class MainApp(App):

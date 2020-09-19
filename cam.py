@@ -22,7 +22,7 @@ class Cam:
     camera: Optional[gp.Camera] = None
     capturing_image: bool = False
 
-    def capture_image(self):
+    def capture_image(self) -> str:
         self.init_camera()
         try:
             self.capturing_image = True
@@ -31,8 +31,10 @@ class Cam:
             camera_file = self.camera.file_get(
                 file_path.folder, file_path.name, gp.GP_FILE_TYPE_NORMAL)
             os.makedirs("photos", exist_ok=True)
-            camera_file.save(f"photos/{str(int(time.time()))}.jpg")
+            file_name = f"photos/{str(int(time.time()))}.jpg"
+            camera_file.save(file_name)
             self.capturing_image = False
+            return file_name
         except Exception as ex:
             print("Failed to capture image: " + str(ex))
             self.capturing_image = False
