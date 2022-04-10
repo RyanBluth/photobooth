@@ -1,2 +1,2 @@
 #!/bin/bash
-pipenv run python main.py
+KIVY_IMAGE=pil pipenv run python main.py

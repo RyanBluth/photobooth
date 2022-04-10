@@ -5,7 +5,7 @@ from kivy.core.image import Image as CoreImage
 from kivy.core.window import Window
 from kivy.graphics.vertex_instructions import Rectangle
 from kivy.uix.button import Button
-from kivy.uix.image import Image
+from kivy.uix.image import Image, AsyncImage
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 from kivy import Config as KivyConfig
@@ -13,6 +13,7 @@ from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
 from time import time
 from cam import Cam, CamInitializationException
 import printer
+from threading import Thread
 
 WIDTH = 1024
 HEIGHT = 600
@@ -21,14 +22,17 @@ HEIGHT = 600
 class PreviewScreen(Screen):
     NAME = "preview"
     file_name: str
+    image: AsyncImage
 
-    def __init__(self, file_name):
+    def __init__(self):
         super().__init__(name=PreviewScreen.NAME)
-        self.file_name = file_name
+        #self.file_name = file_name
         self.size = (1024, 600)
-        image = Image(source=self.file_name, keep_ratio=True,
+        
+        #print(self.file_name)
+        self.image = AsyncImage( size=(584, 438),
                       size_hint_y=0.73, pos_hint={'top': 1})
-        self.add_widget(image)
+        self.add_widget(self.image)
 
         redo_button = Button(background_normal="./assets/image/redo_button_up.png",
                              background_down="./assets/image/redo_button_down.png",
@@ -91,28 +95,35 @@ class CaptureScreen(Screen):
         self.size = (1024, 600)
         self.add_widget(LiveView(self.cam, size=(1024, 683),
                                  size_hint=(None, None), pos=(0, -41)))
-        self.countdown_label = Label(text="10", font_size='180sp', outline_width=6, outline_color=(
+        self.countdown_label = Label(text="5", font_size='180sp', outline_width=6, outline_color=(
             0, 0, 0, 1), color=(1, 1, 1, 1), pos_hint={'center_x': .5, 'center_y': .5})
         self.add_widget(self.countdown_label)
 
     def capture_photo(self):
         try:
-            file_name = self.cam.capture_image()
-            self.manager.add_widget(PreviewScreen(file_name))
+            preview_screen = PreviewScreen()
+            thread = Thread(target = self.save_capture, args = (preview_screen, ))
+            thread.start()
+            self.manager.add_widget(preview_screen)
             self.manager.current = PreviewScreen.NAME
-        except:
+            
+        except Exception as ex:
+            print(ex)
             self.manager.add_widget(CaptureErrorScreen())
             self.manager.current = CaptureErrorScreen.NAME
             Window.clearcolor = (0.1, 0.1, 0.1, 1)
             
+    def save_capture(self, preview_screen):
+        file_name = self.cam.capture_image()
+        preview_screen.image.source = file_name
 
     def on_enter(self):
         if not self.clock_scheduled:
             Clock.schedule_interval(self.update, 1.0 / 24.0)
             self.clock_scheduled = True
-        self.countdown_label.text = "10"
+        self.countdown_label.text = "5"
         self.ran_first_update = False
-        self.countdown_second = 10
+        self.countdown_second = 5
         self.time_since_last_countdown = 0
 
     def update(self, dt):

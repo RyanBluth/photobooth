@@ -33,6 +33,7 @@ class Cam:
             os.makedirs("photos", exist_ok=True)
             file_name = f"photos/{str(int(time.time()))}.jpg"
             camera_file.save(file_name)
+            os.sync()
             self.capturing_image = False
             return file_name
         except Exception as ex:
