@@ -102,8 +102,9 @@ class CaptureScreen(Screen):
     def capture_photo(self):
         try:
             preview_screen = PreviewScreen()
-            thread = Thread(target = self.save_capture, args = (preview_screen, ))
-            thread.start()
+            #thread = Thread(target = self.save_capture, args = (preview_screen, ))
+            #thread.start()
+            self.save_capture(preview_screen)
             self.manager.add_widget(preview_screen)
             self.manager.current = PreviewScreen.NAME
             
